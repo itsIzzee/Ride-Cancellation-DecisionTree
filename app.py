@@ -2,16 +2,17 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# Load the trained model
+# --- Page setup (must be the first Streamlit command) ---
+st.set_page_config(page_title="Ride Cancellation Predictor", layout="centered")
+
+# --- Load the trained model ---
 @st.cache_resource
 def load_model():
     return joblib.load("decision_tree.pkl")
 
 model = load_model()
 
-# --- Page setup ---
-st.set_page_config(page_title="Ride Cancellation Predictor", layout="centered")
-
+# --- App Title ---
 st.title("🚖 Ride Cancellation Prediction")
 st.markdown(
     "Use this tool to predict whether a ride booking will be **successful or cancelled** "
@@ -63,7 +64,7 @@ pickup_cancel_rate = 0.0
 drop_cancel_rate = 0.0
 pickup_drop_pair_freq = 0
 
-# Build DataFrame with required training columns
+# --- Build DataFrame with required training columns ---
 input_df = pd.DataFrame([{
     "hour_of_day": hour_of_day,
     "day_of_week": days.index(day_of_week),
@@ -79,8 +80,14 @@ input_df = pd.DataFrame([{
     "payment_method": payment_method
 }])
 
-# --- Prediction button ---
+# --- Prediction section ---
 st.subheader("🔮 Prediction")
 if st.button("Predict Ride Status", use_container_width=True):
     prediction = model.predict(input_df)[0]
-    st.success(f"**Predicted Booking Status: {prediction}**")
+
+    if prediction.lower() == "success":
+        st.success(f"✅ Predicted Booking Status: **{prediction}**")
+    elif "cancel" in prediction.lower():
+        st.error(f"❌ Predicted Booking Status: **{prediction}**")
+    else:
+        st.warning(f"⚠️ Predicted Booking Status: **{prediction}**")
