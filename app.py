@@ -2,21 +2,21 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# --- Page setup (must be the first Streamlit command) ---
+# --- Page setup (must be first Streamlit command) ---
 st.set_page_config(page_title="Ride Cancellation Predictor", layout="centered")
 
 # --- Load the trained model ---
 @st.cache_resource
 def load_model():
-    return joblib.load("decision_tree.pkl")
+    return joblib.load("decision_tree_balanced.pkl")  # use balanced model
 
 model = load_model()
 
 # --- App Title ---
 st.title("🚖 Ride Cancellation Prediction")
 st.markdown(
-    "Use this tool to predict whether a ride booking will be **successful or cancelled** "
-    "based on booking details."
+    "This app predicts whether a ride booking will be **successful or cancelled** "
+    "based on booking details provided at the time of booking."
 )
 
 st.divider()
@@ -60,9 +60,11 @@ def assign_time_band(h):
         return "Night"
 
 time_band = assign_time_band(hour_of_day)
-pickup_cancel_rate = 0.0
-drop_cancel_rate = 0.0
-pickup_drop_pair_freq = 0
+
+# Add simple heuristics instead of all zeros
+pickup_drop_pair_freq = 50 if pickup_location == drop_location else 10
+pickup_cancel_rate = 0.25 if time_band == "Night" else 0.10
+drop_cancel_rate   = 0.20 if time_band == "Night" else 0.08
 
 # --- Build DataFrame with required training columns ---
 input_df = pd.DataFrame([{
