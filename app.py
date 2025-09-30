@@ -9,30 +9,64 @@ def load_model():
 
 model = load_model()
 
-st.title("🚖 Ride Cancellation Prediction (Decision Tree)")
+# --- Page setup ---
+st.set_page_config(page_title="Ride Cancellation Predictor", layout="centered")
 
-st.markdown("Enter ride booking details below to predict if the ride will be **successful or cancelled**.")
+st.title("🚖 Ride Cancellation Prediction")
+st.markdown(
+    "Use this tool to predict whether a ride booking will be **successful or cancelled** "
+    "based on booking details."
+)
 
-# Collect user inputs
-pickup_location = st.text_input("Pickup Location (e.g., Area-1)")
-drop_location = st.text_input("Drop Location (e.g., Area-2)")
-vehicle_type = st.selectbox("Vehicle Type", ["Auto", "Mini", "Sedan", "Bike"])
-payment_method = st.selectbox("Payment Method", ["Cash", "Card"])
-customer_rating = st.number_input("Customer Rating (1–5)", 1.0, 5.0, 4.5)
-hour_of_day = st.slider("Hour of Day", 0, 23, 12)
-day_of_week = st.selectbox("Day of Week", ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"])
-is_weekend = 1 if day_of_week in ["Saturday","Sunday"] else 0
+st.divider()
 
-# Derived / engineered fields with safe defaults
+# --- Define options ---
+areas = [f"Area-{i}" for i in range(1, 51)]
+days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+vehicles = ["Auto", "Mini", "Sedan", "Bike"]
+
+# --- Input form ---
+st.subheader("📋 Booking Details")
+
+col1, col2 = st.columns(2)
+with col1:
+    pickup_location = st.selectbox("Pickup Location", areas)
+    vehicle_type = st.selectbox("Vehicle Type", vehicles)
+    customer_rating = st.number_input("Customer Rating (1–5)", 1.0, 5.0, 4.5)
+with col2:
+    drop_location = st.selectbox("Drop Location", areas)
+    payment_method = st.selectbox("Payment Method", ["Cash", "Card"])
+    hour_of_day = st.slider("Hour of Day", 0, 23, 12)
+
+col3, col4 = st.columns(2)
+with col3:
+    day_of_week = st.selectbox("Day of Week", days)
+with col4:
+    is_weekend = 1 if day_of_week in ["Saturday","Sunday"] else 0
+    st.write("Weekend?", "✅ Yes" if is_weekend else "❌ No")
+
+st.divider()
+
+# --- Derived features ---
+def assign_time_band(h):
+    if 5 <= h <= 11:
+        return "Morning"
+    elif 12 <= h <= 16:
+        return "Afternoon"
+    elif 17 <= h <= 21:
+        return "Evening"
+    else:
+        return "Night"
+
+time_band = assign_time_band(hour_of_day)
 pickup_cancel_rate = 0.0
 drop_cancel_rate = 0.0
 pickup_drop_pair_freq = 0
-time_band = None   # could also derive from hour_of_day if you want
 
-# Build DataFrame with EXACT columns
+# Build DataFrame with required training columns
 input_df = pd.DataFrame([{
     "hour_of_day": hour_of_day,
-    "day_of_week": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].index(day_of_week),
+    "day_of_week": days.index(day_of_week),
     "is_weekend": is_weekend,
     "pickup_cancel_rate": pickup_cancel_rate,
     "drop_cancel_rate": drop_cancel_rate,
@@ -45,7 +79,8 @@ input_df = pd.DataFrame([{
     "payment_method": payment_method
 }])
 
-# Predict
-if st.button("Predict Ride Status"):
+# --- Prediction button ---
+st.subheader("🔮 Prediction")
+if st.button("Predict Ride Status", use_container_width=True):
     prediction = model.predict(input_df)[0]
-    st.success(f"Predicted Booking Status: **{prediction}**")
+    st.success(f"**Predicted Booking Status: {prediction}**")
